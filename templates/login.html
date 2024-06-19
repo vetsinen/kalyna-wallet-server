@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enter or Restore Solana Account</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.3/css/bulma.min.css">
+
+</head>
+<body>
+<section class="section">
+    <div class="container">
+        <h1 class="title has-text-centered">Create or Restore Solana Account</h1>
+        <div class="box">
+            <form id="restore-form">
+                <div class="field">
+                    <label class="label">Mnemonic Phrase</label>
+                    <div class="control">
+              <textarea rows="9" class="textarea" id="mnemonic-phrase" placeholder="Enter your mnemonic phrase here"
+                        rows="3">
+Ой у лузі червона калина похилилася
+Чогось наша славна Україна зажурилася
+А ми тую червону калину підіймемо
+А ми нашу славну Україну
+Гей, гей, розвеселимо!
+А ми тую червону калину підіймемо
+А ми нашу славну Україну
+Гей, гей, розвеселимо!
+              </textarea>
+                    </div>
+                </div>
+                <div class="field">
+                    <div class="control">
+                        <button type="button" class="button is-primary is-fullwidth" onclick="restoreAccount()">Create
+                            or Restore Solana Account
+                        </button>
+                    </div>
+                </div>
+            </form>
+            <div id="result" class="notification is-hidden"></div>
+        </div>
+    </div>
+</section>
+
+<script>
+    function restoreAccount() {
+      const text = document.getElementById('mnemonic-phrase').value;
+      const resultDiv = document.getElementById('result');
+      fetch('/set_wallet', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ text: text })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Success:', data);
+                if (data.status === 'ok') {console.log('wallet is ok');location.reload();}
+                if (data.status !== 'ok') {
+                resultDiv.className = 'notification is-danger';
+                resultDiv.textContent = 'Too short mnemonic phrase.';
+                resultDiv.classList.remove('is-hidden');
+                }
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+            });
+
+      // Here you would add your logic to restore the account using the mnemonic phrase
+      // For this example, we will just display a success message
+      //resultDiv.className = 'notification is-success';
+      //resultDiv.textContent = 'Account restored successfully!';
+      //resultDiv.classList.remove('is-hidden');
+    }
+</script>
+</body>
+</html>
