@@ -1,7 +1,7 @@
 from kalyna_wallet_lib import generate_cusom_mnemo, get_solana_derived_wallet, get_sol_balance
 from flask import Flask, render_template, request, session, redirect, url_for, jsonify
 
-app = Flask(__name__, static_folder='static')
+app = Flask(__name__)
 app.secret_key = 'KALYNA_WALLET_214_SECRET_KEY'
 
 @app.route('/')
