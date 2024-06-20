@@ -37,6 +37,3 @@ def logout():
     # Clear words stored in the session object
     session.pop('words', default=None)
     return redirect('/')
-
-if __name__ == '__main__':
-    app.run(debug=True)
