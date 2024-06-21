@@ -10,6 +10,9 @@ from pbkdf2 import PBKDF2
 import string, re
 from solders.keypair import Keypair
 from solders.pubkey import Pubkey
+from solana.transaction import Transaction
+from solders.system_program import transfer, TransferParams
+from solders.transaction_status import TransactionConfirmationStatus
 
 import logging
 
@@ -102,7 +105,56 @@ def get_sol_balance(wallet_address):
         raise Exception(f"Failed to get Solana balance: {error}\n")
 
 
-def transfer_coins(sender_address: str, sender_private_key: str, recipient_address: str, amount: float):
+def transfer_coins(mnemo_words, recipient_address: str, amount: float):
+    """
+    Asynchronous function to transfer coins between wallets.
+
+    Args:
+    mnemo(str):
+    recipient_address (str): Recipient's address.
+    amount (float): Amount of tokens to transfer.
+
+    Raises:
+    ValueError: If any of the provided addresses is invalid or the private key is invalid.
+
+    Returns:
+    bool: True if the transfer is successful, False otherwise.
+    """
+    # Создаем пару ключей отправителя из приватного ключа
+    solana_derivation_path = "m/44'/501'/0'/0'"
+    mnemo = Mnemonic()
+    seed = mnemo.to_seed(mnemo_words)
+    sender_keypair = Keypair.from_seed_and_derivation_path(seed, solana_derivation_path)
+    wallet_address = str(sender_keypair.pubkey())
+    private_key = sender_keypair.secret().hex()
+
+    # Создаем транзакцию для перевода токенов
+    txn = Transaction().add(
+        transfer(
+            TransferParams(
+                from_pubkey=sender_keypair.pubkey(),
+                to_pubkey=Pubkey.from_string(recipient_address),
+                # Количество лампортов для перевода, преобразованное из суммы SOL.
+                lamports=int(amount * LAMPORT_TO_SOL_RATIO),
+            )
+        )
+    )
+    # Отправляем транзакцию клиенту
+    send_transaction_response = client.send_transaction(txn, sender_keypair)
+    # Подтверждаем транзакцию
+    confirm_transaction_response = client.confirm_transaction(send_transaction_response.value)
+
+    if hasattr(confirm_transaction_response, 'value') and confirm_transaction_response.value[0]:
+        if hasattr(confirm_transaction_response.value[0], 'confirmation_status'):
+            confirmation_status = confirm_transaction_response.value[0].confirmation_status
+            if confirmation_status:
+                logger.debug(f"Transaction confirmation_status: {confirmation_status}")
+                if confirmation_status in [TransactionConfirmationStatus.Confirmed,
+                                           TransactionConfirmationStatus.Finalized]:
+                    return True
+    return False
+
+def transfer_coins_original(sender_address: str, sender_private_key: str, recipient_address: str, amount: float):
     """
     Asynchronous function to transfer coins between wallets.
 
