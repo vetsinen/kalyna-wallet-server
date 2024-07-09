@@ -54,7 +54,6 @@ def generate_cusom_mnemo(text):
     words = unique_words[:12]
     return " ".join(words) if len(words) == 12 else None
 
-
 def get_solana_keypair_from_mnemo_words(mnemo_words):
     mnemo = Mnemonic()
     seed = mnemo.to_seed(mnemo_words)
@@ -84,6 +83,28 @@ def get_solana_derived_wallet(mnemo_words):
         # Поднятие нового исключения с подробной информацией
         raise Exception(f"Failed to create Solana wallet: {e}")
 
+def is_valid_wallet_address(address: str) -> bool:
+    """
+        Checks whether the input string is a valid Solana wallet address.
+
+        Args:
+            address (str): A string containing the presumed wallet address.
+
+        Returns:
+            bool: True if the address is valid, False otherwise.
+    """
+    try:
+        # Создание объекта PublicKey из строки адреса.
+        # Метод from_string используется для создания объекта PublicKey из строки, содержащей адрес кошелька.
+        # Этот метод позволяет создать объект PublicKey, который может быть использован для проверки подписей
+        # или других операций, связанных с публичным ключом кошелька.
+        Pubkey.from_string(address)
+
+        # Если создание объекта PublicKey прошло успешно, значит адрес валиден
+        return True
+    except ValueError:
+        # Если возникает ошибка, значит адрес невалиден, возвращаем False
+        return False
 
 def get_sol_balance(wallet_address):
     """
@@ -120,6 +141,8 @@ def transfer_coins(mnemo_words, recipient_address: str, amount: float):
     Returns:
     bool: True if the transfer is successful, False otherwise.
     """
+    if not is_valid_wallet_address(recipient_address):
+        return False
     # Создаем пару ключей отправителя из приватного ключа
     solana_derivation_path = "m/44'/501'/0'/0'"
     mnemo = Mnemonic()
@@ -139,8 +162,12 @@ def transfer_coins(mnemo_words, recipient_address: str, amount: float):
             )
         )
     )
+    try:
     # Отправляем транзакцию клиенту
-    send_transaction_response = client.send_transaction(txn, sender_keypair)
+        send_transaction_response = client.send_transaction(txn, sender_keypair)
+    except:
+        logger.debug('error, while sending money to another wallet')
+        return False
     # Подтверждаем транзакцию
     confirm_transaction_response = client.confirm_transaction(send_transaction_response.value)
 
@@ -154,22 +181,6 @@ def transfer_coins(mnemo_words, recipient_address: str, amount: float):
                     return True
     return False
 
-def transfer_coins_original(sender_address: str, sender_private_key: str, recipient_address: str, amount: float):
-    """
-    Asynchronous function to transfer coins between wallets.
-
-    Args:
-    sender_address (str): Sender's address.
-    sender_private_key (str): Sender's private key.
-    recipient_address (str): Recipient's address.
-    amount (float): Amount of tokens to transfer.
-
-    Raises:
-    ValueError: If any of the provided addresses is invalid or the private key is invalid.
-
-    Returns:
-    bool: True if the transfer is successful, False otherwise.
-    """
 
 def mnemonic_to_seed(mnemonic_phrase, passphrase=''):
     mnemo = Mnemonic()  # Create a new instance of the Mnemonic class
